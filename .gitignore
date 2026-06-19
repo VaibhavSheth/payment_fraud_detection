@@ -1,0 +1,9 @@
+target/
+*.class
+*.jar
+*.war
+.idea/
+*.iml
+.DS_Store
+/tmp/kafka-streams/
+application-local.yml
