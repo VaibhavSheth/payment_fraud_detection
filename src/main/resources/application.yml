@@ -44,7 +44,7 @@ spring:
       enable-auto-commit: false
       max-poll-records: 500
       properties:
-        spring.json.trusted.packages: com.frauddetection.model
+        spring.json.trusted.packages: com.frauddetection.model,com.frauddetection.streams
         isolation.level: read_committed
     streams:
       application-id: fraud-detection-streams
