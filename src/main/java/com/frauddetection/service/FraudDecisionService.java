@@ -6,6 +6,9 @@ import com.frauddetection.repository.AuditLogRepository;
 import com.frauddetection.rules.FraudRule;
 import com.frauddetection.rules.RuleEngine;
 import com.frauddetection.streams.WindowedTransaction;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,6 +34,9 @@ public class FraudDecisionService {
     private final AuditLogRepository auditLogRepository;
     private final KafkaTemplate<String, FraudDecision> decisionKafkaTemplate;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final MeterRegistry meterRegistry;
+    private final Counter transactionTotalCounter;
+    private final Timer ruleEvaluationTimer;
 
     @Value("${kafka.topic.fraud-alerts}")
     private String fraudAlertsTopic;
@@ -51,7 +57,15 @@ public class FraudDecisionService {
         List<FraudRule> rules = ruleLoaderService.getRules();
         Set<String> knownPayees = getKnownPayees(windowedTxn.getUserId());
 
-        FraudDecision decision = ruleEngine.evaluate(windowedTxn, rules, knownPayees);
+        FraudDecision decision = ruleEvaluationTimer.record(() ->
+                ruleEngine.evaluate(windowedTxn, rules, knownPayees));
+
+        transactionTotalCounter.increment();
+
+        if (decision.getDecision() == FraudDecision.DecisionType.BLOCK) {
+            meterRegistry.counter("fraud.flags.total",
+                    "rule", decision.getTriggeredRule()).increment();
+        }
 
         persistAuditLog(decision, windowedTxn);
         routeDecision(decision);
