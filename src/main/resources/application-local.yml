@@ -1,0 +1,16 @@
+# Local development overrides — not committed to git
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/frauddb
+    username: fraud_user
+    password: fraud_pass
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  kafka:
+    bootstrap-servers: localhost:9092
+
+logging:
+  level:
+    com.frauddetection: DEBUG

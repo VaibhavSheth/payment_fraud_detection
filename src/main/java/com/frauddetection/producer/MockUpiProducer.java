@@ -7,6 +7,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
@@ -94,12 +98,22 @@ public class MockUpiProducer {
                 .senderVpa(userId.replace("-", "") + "@okaxis")
                 .receiverVpa(receiverVpa)
                 .paymentMode(paymentMode)
-                .deviceId(isNewDevice ? "new-device-" + UUID.randomUUID() : "device-" + userId)
+                .deviceId(hashDeviceId(isNewDevice ? "new-device-" + UUID.randomUUID() : "device-" + userId))
                 .ipAddress("192.168.1." + (random.nextInt(254) + 1))
                 .isNewDevice(isNewDevice)
                 .timestamp(System.currentTimeMillis())
                 .channel(TransactionEvent.Channel.UPI)
                 .idempotencyKey(txnId + ":1")
                 .build();
+    }
+
+    private String hashDeviceId(String rawDeviceId) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(rawDeviceId.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 not available", e);
+        }
     }
 }
