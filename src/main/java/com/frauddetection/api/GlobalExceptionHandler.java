@@ -31,7 +31,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleGeneral(Exception ex, WebRequest request) {
         log.error("[ERROR] Unhandled exception: {}", ex.getMessage(), ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(errorBody(500, "Internal Server Error", ex.getMessage(), request));
+                .body(errorBody(500, "Internal Server Error",
+                        "An unexpected error occurred. Please try again later.", request));
     }
 
     private Map<String, Object> errorBody(int status, String error, String message, WebRequest request) {
