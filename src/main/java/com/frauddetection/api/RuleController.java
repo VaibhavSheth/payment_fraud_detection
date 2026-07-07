@@ -1,5 +1,7 @@
 package com.frauddetection.api;
 
+import com.frauddetection.api.dto.CreateRuleRequest;
+import com.frauddetection.api.dto.UpdateRuleRequest;
 import com.frauddetection.rules.FraudRule;
 import com.frauddetection.rules.RuleRepository;
 import com.frauddetection.service.RuleLoaderService;
@@ -33,10 +35,20 @@ public class RuleController {
     }
 
     @PostMapping
-    public ResponseEntity<FraudRule> createRule(@Valid @RequestBody FraudRule rule) {
-        if (ruleRepository.findByRuleName(rule.getRuleName()).isPresent()) {
+    public ResponseEntity<FraudRule> createRule(@Valid @RequestBody CreateRuleRequest request) {
+        if (ruleRepository.findByRuleName(request.getRuleName()).isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
+
+        FraudRule rule = new FraudRule();
+        rule.setRuleName(request.getRuleName());
+        rule.setDescription(request.getDescription());
+        rule.setRuleType(request.getRuleType());
+        rule.setThreshold(request.getThreshold());
+        rule.setWindowSeconds(request.getWindowSeconds());
+        rule.setPriority(request.getPriority());
+        rule.setActive(true);
+
         FraudRule saved = ruleRepository.save(rule);
         ruleLoaderService.reloadRules();
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
@@ -44,12 +56,12 @@ public class RuleController {
 
     @PutMapping("/{id}")
     public ResponseEntity<FraudRule> updateRule(@PathVariable Long id,
-                                                 @RequestBody FraudRule updates) {
+                                                 @Valid @RequestBody UpdateRuleRequest request) {
         return ruleRepository.findById(id)
                 .map(rule -> {
-                    if (updates.getThreshold() != null) rule.setThreshold(updates.getThreshold());
-                    if (updates.getDescription() != null) rule.setDescription(updates.getDescription());
-                    if (updates.getPriority() > 0) rule.setPriority(updates.getPriority());
+                    if (request.getThreshold() != null) rule.setThreshold(request.getThreshold());
+                    if (request.getDescription() != null) rule.setDescription(request.getDescription());
+                    if (request.getPriority() != null) rule.setPriority(request.getPriority());
                     FraudRule saved = ruleRepository.save(rule);
                     ruleLoaderService.reloadRules();
                     return ResponseEntity.ok(saved);
